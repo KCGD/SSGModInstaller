@@ -152,7 +152,7 @@ var consoleLoop = setInterval(function(){
 }, 200)
 
 
-function largeHttpGet(url, callback, progress) {
+function largeHttpGet(url, callback, progress, error) {
 
     console.log("download [NODEJS]: " + url);
 
@@ -160,6 +160,14 @@ function largeHttpGet(url, callback, progress) {
     var _buffer = [];
 
     var _req = http.get(url, function (res) {
+
+        var {statusCode} = res;
+
+        if (statusCode !== 200){
+
+            consoleLog = ["Couldnt connect to server... make sure you're connected to the internet and this program isnt getting blocked by the firewall"];
+
+        }
 
         var _total = parseInt(res.headers['content-length'], 10);
         //console.log("total: "+_total)
@@ -182,3 +190,17 @@ function largeHttpGet(url, callback, progress) {
     })
 
 }
+
+process.on('uncaughtException',function(err){
+
+    consoleLog = ["Couldnt connect to server... make sure you're connected to the internet and this program isnt getting blocked by the firewall"," ","send me err.log !!!"];
+    fs.writeFileSync("./err.log",err.stack);
+
+})
+
+process.on('uncaughtException', function (err) {
+
+    consoleLog = ["Couldnt connect to server... make sure you're connected to the internet and this program isnt getting blocked by the firewall", " ", "send me err.log !!!"];
+    fs.writeFileSync("./err.log", err.stack);
+
+})
