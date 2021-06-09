@@ -1,0 +1,14 @@
+.loadingBar{
+    position:absolute;
+    top:0;
+    left:0;
+    width:0;
+    height:100%;
+    background-color:rgb(60, 110, 202);
+}
+
+.loadingBarFrame{
+    position:absolute;
+    background-color: #4d5357;
+    height:20px;
+}

@@ -1,0 +1,30 @@
+{
+    "name": "Mod_installer",
+    "version": "1.0.0",
+    "main": "resources/index.html",
+    "scripts": {
+        "start": "nw --remote-debugging-port=9222",
+        "prod": "nwbuild -p win64 -o build -v 0.54.0 /"
+    },
+    "dependencies": {
+        "appdata-path": "^1.0.0",
+        "fs": "0.0.1-security",
+        "http": "0.0.1-security",
+        "http2": "^3.3.7",
+        "https": "^1.0.0",
+        "rimraf": "^3.0.2",
+        "unzipper": "^0.10.11"
+    },
+    "window": {
+        "toolbar": false,
+        "width": 800,
+        "height": 600,
+        "frame": true,
+        "icon": "./resources/mc.png",
+        "resizable": false,
+        "position": "center"
+    },
+    "devDependencies": {
+        "nw-builder": "^3.5.7"
+    }
+}

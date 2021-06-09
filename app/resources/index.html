@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+
+<head>
+    <script src="jquery-3.6.0.min.js"></script>
+    <script src="jquery.fittext.js"></script>
+    <script type = "text/javascript" src = "jquery-ui.min.js"></script>
+
+    <title>Mod Installer</title>
+
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="modMenu.css">
+    <link rel="stylesheet" href="loadingBar.css">
+    <link rel="stylesheet" href="textArea.css">
+
+    <link rel="icon" href="./resources/mc.png">
+
+    <style>
+        .menuActive{
+            background-color: #4d5357;
+        }
+    </style>
+
+    <script>
+        //process.cwd(); returns FULL DIRECTORY NAME
+
+        var _choseMod = "";
+        var _menuDivs = [];
+
+        const fs = require('fs');
+        const http = require('https'); //change to https in prod
+        const rimraf = require('rimraf');
+        const _appDataPathModule = require('appdata-path');
+        const unzipper = require('unzipper');
+        const appDataPath = _appDataPathModule();
+
+        var currentFrame = 1;
+        var mcDir = "";
+        var modsIndex;
+        var _install;
+        var _modRepo;
+
+        const CWD_DIR_LIST = fs.readdirSync("./"); //list of files in nwjs directory for deleting installer after
+
+        window.onload = function(){
+
+            largeHttpGet("https://kcgdnetwork.net/mcModInstaller/index.json", function (data) {
+
+
+                modsIndex = JSON.parse(String(data));
+                console.log(modsIndex);
+                console.log(modsIndex.length)
+
+                main();
+
+            }, function () {});
+
+        }
+
+        function main(){
+            
+            console.log(String("guess mc dir: "+appDataPath+"/.minecraft").replace(/\\/g,"/"));
+            $("#gameDir").val(String(appDataPath+"/.minecraft").replace(/\\/g,"/"));
+
+            $("#backButton").css({"background-color":"#4b5053","cursor":"not-allowed"});
+
+
+            //set up mod menu
+            var _menuSum = "";
+            for(var i=0;i<modsIndex.length;i++){
+               
+                _menuSum = _menuSum + `<a id="mod${i}">${modsIndex[i].name}</a>`
+
+            }
+
+            console.log(_menuSum)
+            $("#modMenu").html(_menuSum);
+
+            /*
+            
+                TODO:
+                    INSTALLER WORKS!!!
+                    make code more legible in forge install part, its kinda fucky cause of removing the install-skipping part
+
+                    
+
+            */
+
+
+            $("#nextButton").click(function(){
+                switch (currentFrame){
+                    case 1: //game dir
+                        mcDir = $("#gameDir").val().replace(/\\/g,"/");
+                        console.log("confirm mc dir: "+mcDir);
+
+                        for(var i=0;i<modsIndex.length;i++){
+
+                            _defMenuClick(i);
+
+                        }
+
+                        switchFrame(1);
+                    break;
+
+                    case 2: //mod select
+
+                        largeHttpGet("https://kcgdnetwork.net/mcModInstaller/"+modsIndex[_choseMod].dir+"/install.json",function(data){
+
+                            _modRepo = modsIndex[_choseMod].dir;
+
+                            _install = JSON.parse(String(data));
+                            console.log(data);
+
+                            if(fs.existsSync(mcDir+"/versions/"+_install.installer.versionName)){
+                                
+                                console.log("forge existance irrelivant, delete anyway")
+
+                                rimraf(mcDir+"/versions/"+_install.installer.versionName,function(err){
+                                    if(err){
+                                        console.log(err);
+                                    }
+                                })
+
+                            }
+
+                        
+                                switchFrame(1,function(){
+
+                                    //hide buttons to prevent people from initiating next frame before current one is done
+                                    //didnt think this would be a problem till i found myself doing it during testing lmao
+                                    $("#nextButton").hide();
+                                    $("#backButton").hide();
+
+                                    //delete all in ./_tmp if it exists
+                                    if(fs.existsSync("./_tmp")){
+                                        console.log("deleting ./_tmp")
+                                        rimraf("./_tmp",function(){
+
+                                            fs.mkdirSync("./_tmp");
+
+                                        })
+                                    } else {
+                                        fs.mkdirSync("./_tmp");
+                                    }
+                                    
+                                    var loadBar = new loadingBar("forgeDl");
+
+                                    setTimeout(function(){
+
+                                        largeHttpGet("https://kcgdnetwork.net/mcModInstaller/"+_modRepo+"/"+_install.installer.jar,function(data){
+
+                                            fs.writeFileSync("./_tmp/"+_install.installer.jar,Buffer.from(data, 'utf8'));
+
+                                            var installRuntime = require('child_process').exec('jre\\java.exe -jar "_tmp\\'+_install.installer.jar+'"');
+
+                                            installRuntime.on('exit',function(){
+                                                console.log("forge done");
+                                                //move to mod installing
+
+                                                $("#nextButton").trigger("click");
+
+
+                                            })
+
+                                            }, function (progress){
+
+                                                loadBar.set(progress);
+
+                                            }
+                                        );
+
+                                    },500);
+
+                                    /*
+                                    //TESTING LOADING BAR
+                                    var _loadingBarTestCnt = 0;
+                                    var _loadingLoop = setInterval(function(){
+                                        if(_loadingBarTestCnt>100){
+                                            clearInterval(_loadingLoop);
+                                        } else {
+                                            loadBar.set(_loadingBarTestCnt);
+                                            _loadingBarTestCnt = _loadingBarTestCnt + 10;
+                                        }
+                                    },700)
+
+                                    //END TEST SECTION
+
+                                    */
+
+                                });
+
+                            
+
+                        },function(){});
+
+                    break;
+
+                    case 3:
+
+                        switchFrame(1,null,true);
+
+                        console.log("mod install");
+                        console.log(_install.mods);
+
+                        if(fs.existsSync(mcDir + "/mods")){
+
+                            console.log("mod folder exists");
+                            rimraf(mcDir+"/mods",function(err){
+
+                                if(err){
+                                    console.log(err);
+                                    throw err;
+                                } else {
+                                    fs.mkdirSync(mcDir+"/mods");
+                                }
+
+                            })
+
+                        } else {
+
+                            console.log("mods folder !exists");
+                            fs.mkdirSync(mcDir + "/mods");
+
+                        }
+
+                        var modsLoadingBar = new loadingBar("modsDL");
+                        var modsTextArea = new textArea("InstallTextArea");
+
+                        modsTextArea.write("DOWNLOAD: "+"https://kcgdnetwork.net/mcModInstaller/"+_modRepo+"/mods/pack.zip");
+
+
+                        console.log("https://kcgdnetwork.net/mcModInstaller/"+_modRepo+"/mods/pack.zip")
+                        largeHttpGet("https://kcgdnetwork.net/mcModInstaller/"+_modRepo+"/mods/pack.zip",function(data){
+
+                            //handle download buffer
+                            fs.writeFileSync("./_tmp/pack.zip",Buffer.from(data, 'utf8'));
+                            console.log("mods download done");
+
+                            fs.createReadStream('./_tmp/pack.zip')
+
+                                .pipe(unzipper.Parse())
+
+                                .on('entry', function (entry) {
+
+                                    console.log(entry)
+
+                                    var fileName = entry.path;
+                                    var type = entry.type; // 'Directory' or 'File'
+                                    var size = entry.vars.uncompressedSize; // There is also compressedSize;
+
+                                    console.log("extract: "+fileName);
+                                    modsTextArea.write("extract: "+fileName);
+                                    //modsTextArea.elementJQ.scrollTop(modsTextArea.elementJQ.prop("scrollHeight"));
+
+                                    if (type === "Directory") {
+
+                                        fs.mkdirSync(mcDir + "/mods/" + fileName);
+
+                                    } else {
+
+                                        entry.pipe(fs.createWriteStream(mcDir + "/mods/" + fileName));
+
+                                    }
+
+                                })
+
+                                .promise()
+
+                                .then( () => done(), e => console.log('error',e));
+
+                                function done(){
+
+                                    modsTextArea.write("done!");
+                                    $("#nextButton").show();
+                                    $("#backButton").show();
+
+                                }
+
+                        }, function(progress){
+
+                            modsLoadingBar.set(progress);
+
+                        });
+
+
+                    break;
+
+                    case 4:
+
+                    switchFrame(1,null);
+
+                        rimraf("./_tmp",function(err){
+
+                            if(err){
+                                console.log(err);
+                            } else {
+                                console.log("delete ./_tmp again");
+
+                                $("#backButton").hide();
+                                $("#backButton").off();
+                                $("#nextButton").hide();
+                                $("#nextButton").off();
+
+                                $("#finishButton").click(function(){
+                                    nw.App.quit();
+
+                                    setTimeout(function(){
+                                        //force shutdown if process hangs on App.quit();
+                                        process.exit(0);
+                                    },3000);
+
+                                })
+
+                                $("#forgeVersionFinal").text("Pls open your minecraft launcher and set it to " + _install.installer.versionName);
+                            }
+
+                        })
+
+                    break;
+
+                };
+            });
+
+            $("#backButton").click(function(){
+                console.log("current frame: "+currentFrame);
+                if(currentFrame > 1){
+                    switchFrame(0);
+                };
+            });
+
+
+            function switchFrame(move,callback,hideBack){
+
+                if(move === 1){
+
+                    $("#frame"+currentFrame).hide();
+                    currentFrame++;
+                    $("#frame"+currentFrame).show();
+
+                    if(currentFrame>1 && typeof hideBack === "undefined"){
+                        console.log("enable back")
+                        $("#backButton").show();
+                        $("#backButton").css({"background-color":"#3b3f42","cursor":"pointer"});
+                        $("#backButton").hover(function(e) { 
+                            $(this).css("background-color",e.type === "mouseenter"?"#4b5053":"#3b3f42") 
+                        })
+                    }; //4b5053
+
+                    if(callback){callback()};
+
+                } else {
+
+                    $("#frame"+currentFrame).hide();
+                    currentFrame = currentFrame - 1;
+                    $("#frame"+currentFrame).show();
+
+                    if(currentFrame===1){
+                        $("#backButton").unbind('mouseenter mouseleave');
+                        $("#backButton").hide();
+                    };
+
+                    if(callback){callback()};
+
+                };
+
+            };
+        };
+
+        function _defMenuClick(int){
+
+            _menuDivs.push($("#mod"+int));
+
+            $("#mod"+int).click(function(){
+
+                for(var i=0;i<_menuDivs.length;i++){
+                    _menuDivs[i].css({"background-color":"#3b3f42;"})
+                    _menuDivs[i].hover(function(e) { 
+                            $(this).css("background-color",e.type === "mouseenter"?"#4b5053":"#3b3f42") 
+                    })
+                }
+
+                $("#mod"+int).addClass("menuActive");
+
+                $("#mod"+int).unbind('mouseenter mouseleave');
+                $("#mod"+int).css({"background-color":"#4d5357"});
+
+                console.log("picked mod: "+modsIndex[int].name + " id: "+int);
+                _choseMod = int;
+            });
+        };
+
+
+
+
+
+        function largeHttpGet(url,callback,progress){
+
+            console.log("download [NODEJS]: "+url);
+
+            var _current = 0;
+            var _buffer = [];
+
+            var _req = http.get(url,function(res){
+
+                var _total = parseInt(res.headers['content-length'], 10);
+                //console.log("total: "+_total)
+            
+                res.on('data',function(chunk){
+                    _buffer.push(chunk);
+
+                    //console.log(_current + " + " + chunk.length + " = " + _current + chunk.length)
+
+                    _current = parseFloat(_current + chunk.length);
+                    //console.log("PROGRESS: "+ _current)
+                    progress(_current/_total * 100);
+                })
+
+                res.on('end',function(){
+                    callback(Buffer.concat(_buffer));
+                    //console.log("request end");
+                })
+
+            })
+            
+        }
+
+
+        function loadingBar(divName){
+
+            var _dv = document.createElement("div");
+            _dv.id = divName+"-bar";
+            _dv.className = "loadingBar";
+            $("#"+divName).html(_dv);
+
+            this.element = document.getElementById(divName+"-bar");
+            this.elementJQ = $("#"+divName+"-bar");
+
+            this.set = function(width){
+                this.elementJQ.css({"width":width+"%"});
+            }
+
+        }
+
+        function textArea(divName){
+
+            var _dv = document.createElement("div");
+            _dv.id = divName+"-textArea";
+            _dv.className = "textArea";
+            $("#"+divName).html(_dv);
+
+            this.element = document.getElementById(divName+"-textArea");
+            this.elementJQ = $("#"+divName+"-textArea");
+
+            this.write = function(text){
+                var _html = `<div class="areaText">${text}</div><br>`;
+                this.elementJQ.append(_html);
+                this.elementJQ.scrollTop(this.elementJQ.prop("scrollHeight"));
+            }
+        }
+
+    </script>
+</head>
+
+<script>
+
+    //DISABLE IN PROD
+
+    if(process.versions['nw-flavor'] === "sdk"){
+        var gui = require('nw.gui');
+        var win = gui.Window.get();
+        win.showDevTools(0);
+    }
+
+
+</script>
+
+<body>
+    <div class="title1" id="title1">Mod installer thing</div>
+    <div class="frame" id="frame1">
+        
+        <div class="smolText" style="top:120px;left:20px;">Minecraft directory:</div>
+        <input type="text" class="textInputField" id="gameDir" style="top:150px;"></input>
+
+    </div>
+
+    <div class="frame" id="frame2" style="display:none">
+        
+        <div class="smolText" style="top:120px;left:20px;">Pls pick a mod to install:</div>
+        <div class="vertical-menu" id="modMenu"></div>
+
+    </div>
+
+    <div class="frame" id="frame3" style="display:none">
+        
+        <div class="smolText" style="top:120px;left:20px;">Setting up forge... (make sure forge directory is the same as the game directory!!)</div>
+        <div class="smolText" style="top:180px;left:20px;">Downloading...</div>
+        <div class="loadingBarFrame" id="forgeDl" style="width:65%;top:210px;left:20px;"></div>
+
+    </div>
+
+    <div class="frame" id="frame4" style="display:none">
+        
+        <div class="smolText" style="top:120px;left:20px;">Downloading mods...</div>
+        <div class="loadingBarFrame" id="modsDL" style="width:65%;top:150px;left:20px;"></div>
+        <div class="textAreaCover" id="InstallTextArea" style="left:20px;top:180px;width:90%;height:300px;"></div>
+
+    </div>
+
+    <div class="frame" id="frame5" style="display:none">
+        
+        <div class="smolText" style="top:120px;left:20px;">Mods installed successfully!</div>
+        <div class="smolText" id="forgeVersionFinal" style="top:180px;left:20px;"></div>
+        <div class="button" id="finishButton" style="bottom:20px;left:55%;"><div class="buttonText">Finish</div></div>
+
+    </div>
+
+    <div class="button" id="nextButton" style="bottom:20px;left:55%;"><div class="buttonText">Next ></div></div>
+    <div class="button" id="backButton" style="bottom:20px;left:45%;display:none;"><div class="buttonText">< Back</div></div>
+
+</body>

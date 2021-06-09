@@ -1,0 +1,21 @@
+.textArea{
+    position:absolute;
+    left:0;
+    top:0;
+    width: 100%;
+    height:100%;
+    overflow-y:scroll;
+    overflow-x:hidden;
+}
+
+.areaText{
+    font-size:73%;
+    top:5px;
+    color:#fff;
+    font-family: 'Courier New', Courier, monospace;
+    word-break: break-all;
+    text-align: left;
+
+    position:relative;
+    left:5px;
+}
