@@ -18,6 +18,18 @@
         .menuActive{
             background-color: #4d5357;
         }
+        .javaBtn{
+            background-color:#4d5357;
+            width:200px;
+            height:75px;
+            left:20px;
+            top:180px;
+            position:absolute;
+            cursor:pointer;
+        }
+        .javaBtn:hover{
+            background-color:#61686d;
+        }
     </style>
 
     <script>
@@ -31,6 +43,7 @@
         const rimraf = require('rimraf');
         const _appDataPathModule = require('appdata-path');
         const unzipper = require('unzipper');
+        const regedit = require('regedit');
         const appDataPath = _appDataPathModule();
 
         var currentFrame = 1;
@@ -38,8 +51,16 @@
         var modsIndex;
         var _install;
         var _modRepo;
+        var hasJava;
 
         const CWD_DIR_LIST = fs.readdirSync("./"); //list of files in nwjs directory for deleting installer after
+
+        checkJava(function(resp){
+
+            console.log("jv: "+resp)
+            hasJava = resp;
+
+        })
 
         window.onload = function(){
 
@@ -62,6 +83,56 @@
             $("#gameDir").val(String(appDataPath+"/.minecraft").replace(/\\/g,"/"));
 
             $("#backButton").css({"background-color":"#4b5053","cursor":"not-allowed"});
+
+
+            //java screen
+            if (!hasJava) {
+
+                console.log("no java")
+
+                //set frame by manual int
+                console.log("set frame: " + 6)
+                $("#frame1").hide();
+                //currentFrame = set;
+                $("#frame6").show();
+                $("#nextButton").hide();
+
+                $("#javaBtn").click(function(){
+
+                    //start java install
+                    console.log("start java installer");
+                    require('child_process').exec('java\\jre-8u291-windows-x64.exe');
+                    //handling child exit isnt important cause the porgram checks registry to make sure its in the environment path
+                    //it has to do this so it can start forge on restart, god java is such a pain to work with
+
+                });
+
+                var javaCheckLoop = setInterval(function(){
+                    $("#nextBtn").hide();
+
+                    //child context wont update, figure out how to do that
+                    //check: https://stackoverflow.com/questions/67907430/terminal-context-not-updating-in-nodejs-child-process
+                    checkJava(function(res){
+
+                        if(res){
+                            //java installed
+                            clearInterval(javaCheckLoop);
+                            $("#nextBtn").hide();
+                            $("#frame6").hide();
+                            $("#frame7").show();
+
+                            $("#finishButtonJRE").click(function(){
+                                nw.App.quit();
+                            })
+                        } else {
+                            console.log("java not found")
+                        }
+
+                    })
+
+                },2000)
+
+            }
 
 
             //set up mod menu
@@ -150,7 +221,7 @@
 
                                             fs.writeFileSync("./_tmp/"+_install.installer.jar,Buffer.from(data, 'utf8'));
 
-                                            var installRuntime = require('child_process').exec('jre\\java.exe -jar "_tmp\\'+_install.installer.jar+'"');
+                                            var installRuntime = require('child_process').exec('java -jar "_tmp\\'+_install.installer.jar+'"');
 
                                             installRuntime.on('exit',function(){
                                                 console.log("forge done");
@@ -360,7 +431,7 @@
 
                     if(callback){callback()};
 
-                };
+                }
 
             };
         };
@@ -387,9 +458,6 @@
                 _choseMod = int;
             });
         };
-
-
-
 
 
         function largeHttpGet(url,callback,progress){
@@ -423,7 +491,6 @@
             
         }
 
-
         function loadingBar(divName){
 
             var _dv = document.createElement("div");
@@ -456,6 +523,17 @@
                 this.elementJQ.scrollTop(this.elementJQ.prop("scrollHeight"));
             }
         }
+
+        function checkJava(callback) {
+
+            var c = require('child_process').exec('reg query "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment"', (error, data) => {
+                console.log("java: "+String(data)); //WHY TF DOESNT THIS RETURN TRUE
+                console.log((String(data).includes("javapath")));
+                callback(String(data).includes("javapath")); //detect.exe returns true as string, compairison converts to bool
+
+            });
+
+        };
 
     </script>
 </head>
@@ -512,6 +590,25 @@
         <div class="button" id="finishButton" style="bottom:20px;left:55%;"><div class="buttonText">Finish</div></div>
 
     </div>
+
+    <!--EXTRA FRAMES (not shown consistantly)-->
+
+        <div class="frame" id="frame6" style="display:none"> <!--java install-->
+        
+            <div class="smolText" style="top:120px;left:20px;">Java is required for this installer to run correctly, install it either by clicking Install or downloading it at <a src="https://www.java.com/en/download/">https://www.java.com/en/download/</a></div>
+            <div class="javaBtn" id="javaBtn"><div class="buttonText">Install</div></div>
+        
+        </div>
+
+        <div class="frame" id="frame7" style="display:none">
+            <!--post java install (restart)-->
+            
+            <div class="smolText" style="top:120px;left:20px;">Pls restart the installer to continue</a></div>
+            <div class="button" id="finishButtonJRE" style="bottom:20px;left:55%;">
+                <div class="buttonText">Finish</div>
+            </div>
+            
+        </div>
 
     <div class="button" id="nextButton" style="bottom:20px;left:55%;"><div class="buttonText">Next ></div></div>
     <div class="button" id="backButton" style="bottom:20px;left:45%;display:none;"><div class="buttonText">< Back</div></div>
