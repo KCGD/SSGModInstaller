@@ -6,6 +6,8 @@ SSGModInstaller is a mod installer for minecraft that I made cause everyone is t
 
 This requires nodejs 12.18.0 (at least thats what i developed it on), as well as nwbuilder and pkg being installed globally
 
+it also requires git to be installed and accessible from the command line (https://gitforwindows.org/)
+
 ```bash
 npm i -g nw-builder
 ```
