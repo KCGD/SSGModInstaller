@@ -26,8 +26,6 @@ also make sure to copy the nwjs sdk into the app folder, as well as extracting t
 
 nwjs sdk: https://dl.nwjs.io/v0.54.0/nwjs-sdk-v0.54.0-win-x64.zip
 
-java runtime: https://fs.kcgdnetwork.net:2028/file/36pszaoeSyR-P19b1DUpunNXjjw9/jre.7z (can also get this by copying the contents of java's "bin" folder, reccomended to use java 1.8.0_291)
-
 ## Usage
 
 Just run build.bat, should create a release for the program, this applies to both the app and setup
