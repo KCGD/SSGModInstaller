@@ -22,7 +22,7 @@ Use npm to install the required modules for both the app and setup
 npm i package-lock.json
 ```
 
-also make sure to copy the nwjs sdk into the app folder, as well as extracting the java runtime into the "jre" folder
+also make sure to copy the nwjs sdk into the app folder
 
 nwjs sdk: https://dl.nwjs.io/v0.54.0/nwjs-sdk-v0.54.0-win-x64.zip
 
