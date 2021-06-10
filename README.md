@@ -30,8 +30,5 @@ java runtime: https://fs.kcgdnetwork.net:2028/file/36pszaoeSyR-P19b1DUpunNXjjw9/
 
 Just run build.bat, should create a release for the program, this applies to both the app and setup
 
-## Contributing
-balls
-
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
