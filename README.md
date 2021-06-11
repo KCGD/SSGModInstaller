@@ -9,12 +9,9 @@ This requires nodejs 12.18.0 (at least thats what i developed it on), as well as
 it also requires git to be installed and accessible from the command line (https://gitforwindows.org/)
 
 ```bash
-npm i -g nw-builder
+npm i -g nw-builder pkg
 ```
 
-```bash
-npm i -g pkg
-```
 
 Use npm to install the required modules for both the app and setup
 
