@@ -18,8 +18,14 @@ npm i -g pkg
 
 Use npm to install the required modules for both the app and setup
 
+app (run in the app folder):
 ```bash
-npm i package-lock.json
+npm i fs https rimraf appdata-path unzipper
+```
+
+setup (run in setup folder)
+```bash
+npm i fs rimraf unzipper https cli-cursor
 ```
 
 also make sure to copy the nwjs sdk into the app folder
